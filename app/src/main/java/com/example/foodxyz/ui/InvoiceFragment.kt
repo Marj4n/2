@@ -56,28 +56,7 @@
                 override fun onDataChange(snapshot: DataSnapshot) {
                     // Get the child nodes from the "cartItems" node
                     for (itemSnapshot in snapshot.children) {
-                        val itemId = itemSnapshot.key
-                        val productSnapshot = itemSnapshot.child("product")
-                        val quantity = itemSnapshot.child("quantity").getValue(Int::class.java)
 
-                        // Get the product details from the "product" child node
-                        val productId = productSnapshot.child("id").getValue(String::class.java)
-                        val productName = productSnapshot.child("productName").getValue(String::class.java)
-                        val image = productSnapshot.child("image").getValue(String::class.java)
-                        val price = productSnapshot.child("price").getValue(Int::class.java)
-                        val rating = productSnapshot.child("rating").getValue(Int::class.java)
-                        val stock = productSnapshot.child("stock").getValue(Int::class.java)
-
-                        // Calculate the subtotal and total
-                        val subtotal = price?.times(quantity!!)
-                        val total = subtotal
-
-                        // Set the values of the TextViews
-                        nameProduct.text = productName
-                        priceProduct.text = price?.let { formatRupiah(it) }
-                        quantityProduct.text = quantity.toString()
-                        subTotalProduct.text = subtotal?.let { formatRupiah(it) }
-                        totalProduct.text = total?.let { formatRupiah(it) }
                     }
                 }
 

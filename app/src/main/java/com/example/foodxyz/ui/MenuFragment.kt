@@ -71,7 +71,6 @@ class MenuFragment : Fragment() {
                     }
                     adapter.notifyDataSetChanged()
                 }
-                dialog.dismiss()
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -79,6 +78,7 @@ class MenuFragment : Fragment() {
                 Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
             }
         }
+        dialog.dismiss()
         databaseReference.addValueEventListener(eventListener)
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
