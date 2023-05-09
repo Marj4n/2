@@ -1,5 +1,6 @@
 package com.example.foodxyz
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -14,25 +15,24 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.example.foodxyz.databinding.ActivityLoginBinding
+import com.example.foodxyz.request.LoginRequest
 import com.google.android.material.textfield.TextInputLayout
-import com.google.firebase.FirebaseNetworkException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var firebaseAuth: FirebaseAuth
     private var blueColor: Int = 0
     private lateinit var labelUsernameText: TextView
     private lateinit var labelPasswordText: TextView
+    private var API = RetrofitHelper.getInstance().create(API::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
         binding = ActivityLoginBinding.inflate(layoutInflater)
-        firebaseAuth = FirebaseAuth.getInstance()
         setContentView(binding.root)
 
         val star = "*"
@@ -81,26 +81,37 @@ class LoginActivity : AppCompatActivity() {
                 isValid = false
             }
 
-            if (isValid){
-                val email = "$username@foodxyz.com"
-                firebaseAuth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener {
-                        if (it.isSuccessful) {
-                            startActivity(Intent(this, MainActivity::class.java))
-                            Toast.makeText(this, "Login success!", Toast.LENGTH_SHORT).show()
-                            finish()
-                        } else {
-                            val errorMessage = when (it.exception) {
-                                is FirebaseAuthInvalidUserException -> "User tidak ditemukan"
-                                is FirebaseAuthInvalidCredentialsException -> "Password salah"
-                                is FirebaseNetworkException -> "Network error"
-                                else -> it.exception?.message
-                            }
-                            if (errorMessage != null) {
-                                Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
-                            }
-                        }
+            if (isValid) {
+                val builder = AlertDialog.Builder(this@LoginActivity)
+                builder.setCancelable(false)
+                builder.setView(R.layout.progress_layout)
+                val dialog = builder.create()
+                dialog.show()
+                val loginRequest = LoginRequest(username, password)
+                CoroutineScope(Dispatchers.Main).launch {
+                    val response = API.login(loginRequest)
+
+                    if (response.isSuccessful) {
+                        dialog.dismiss()
+                        val token = response.body()?.data
+                        val intent = Intent(this@LoginActivity, MainActivity::class.java)
+                        intent.putExtra("TOKEN", token)
+                        getSharedPreferences("TOKEN", MODE_PRIVATE).edit().putString("TOKEN", token).apply()
+                        startActivity(intent)
+                        Toast.makeText(this@LoginActivity, "Login berhasil", Toast.LENGTH_SHORT)
+                            .show()
+                    } else if (response.body()?.data == null) {
+                        dialog.dismiss()
+                        Toast.makeText(
+                            this@LoginActivity, "Username atau password salah", Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        dialog.dismiss()
+                        Toast.makeText(
+                            this@LoginActivity, "Login gagal", Toast.LENGTH_SHORT
+                        ).show()
                     }
+                }
             }
         }
 

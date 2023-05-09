@@ -1,6 +1,7 @@
 package com.example.foodxyz
 
 import User
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -15,29 +16,27 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.example.foodxyz.databinding.ActivityDaftarBinding
+import com.example.foodxyz.request.RegisterRequest
 import com.google.android.material.textfield.TextInputLayout
-import com.google.firebase.FirebaseNetworkException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class DaftarActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDaftarBinding
-    private lateinit var firebaseAuth: FirebaseAuth
     private var blueColor: Int = 0
     private lateinit var labelFullNameText: TextView
     private lateinit var labelUsernameText: TextView
     private lateinit var labelAddressText: TextView
     private lateinit var labelPasswordText: TextView
     private lateinit var labelConfirmPasswordText: TextView
+    private var API = RetrofitHelper.getInstance().create(API::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_daftar)
 
         binding = ActivityDaftarBinding.inflate(layoutInflater)
-        firebaseAuth = FirebaseAuth.getInstance()
         setContentView(binding.root)
 
         val star = "*"
@@ -126,9 +125,7 @@ class DaftarActivity : AppCompatActivity() {
             validateInput(address, "Alamat tidak boleh kosong", binding.addressLayout)
             validateInput(password, "Password tidak boleh kosong", binding.passwordLayout)
             validateInput(
-                confirmPassword,
-                "Konfirmasi password tidak boleh kosong",
-                binding.passwordLayout
+                confirmPassword, "Konfirmasi password tidak boleh kosong", binding.passwordLayout
             )
 
             if (password != confirmPassword) {
@@ -136,32 +133,26 @@ class DaftarActivity : AppCompatActivity() {
             }
 
             if (isValid) {
-                val email = "$username@foodxyz.com"
-                firebaseAuth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener {
-                        if (it.isSuccessful) {
-                            val user = User(
-                                fullName = fullName,
-                                username = email,
-                                address = address
-                            )
-                            val database = FirebaseDatabase.getInstance()
-                            val userRef = database.getReference("users")
-                            userRef.child(username.replace(".", "_")).setValue(user)
-
-                            startActivity(Intent(this, LoginActivity::class.java))
-                        } else {
-                            val errorMessage = when (it.exception) {
-                                is FirebaseAuthInvalidCredentialsException -> "Invalid email format"
-                                is FirebaseAuthUserCollisionException -> "Username sudah digunakan"
-                                is FirebaseNetworkException -> "Network error"
-                                else -> it.exception?.message
-                            }
-                            if (errorMessage != null) {
-                                Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                val builder = AlertDialog.Builder(this@DaftarActivity)
+                builder.setCancelable(false)
+                builder.setView(R.layout.progress_layout)
+                val dialog = builder.create()
+                dialog.show()
+                val registerRequest = RegisterRequest(username, password, confirmPassword, fullName, address)
+                CoroutineScope(Dispatchers.Main).launch {
+                    val response = API.daftar(registerRequest)
+                    if (response.isSuccessful) {
+                        dialog.dismiss()
+                        val user = response.body()?.data
+                        val intent = Intent(this@DaftarActivity, LoginActivity::class.java)
+                        intent.putExtra("user", user)
+                        startActivity(intent)
+                        Toast.makeText(this@DaftarActivity, "Daftar sukses", Toast.LENGTH_SHORT).show()
+                    } else {
+                        dialog.dismiss()
+                        Toast.makeText(this@DaftarActivity, "Daftar gagal", Toast.LENGTH_SHORT).show()
                     }
+                }
             }
         }
 
