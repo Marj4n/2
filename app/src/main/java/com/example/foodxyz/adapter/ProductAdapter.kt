@@ -90,7 +90,7 @@ class ProductAdapter(private val context: Context, private var productList: List
                 val totalFormatted =
                     "Rp. " + total.toString().reversed().chunked(3).joinToString(".").reversed()
                 val purchaseButton =
-                    (context as MainActivity).findViewById<Button>(R.id.btnPurchase)
+                    (context as MainActivity).findViewById<Button>(R.id.btnAdd)
                 purchaseButton.text =
                     "Bayar Sekarang                                $totalFormatted"
 

@@ -4,9 +4,9 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import com.example.android.ui.ProfileFragment
 import com.example.foodxyz.databinding.ActivityMainBinding
 import com.example.foodxyz.ui.MenuFragment
-import com.example.foodxyz.ui.ProfileFragment
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
